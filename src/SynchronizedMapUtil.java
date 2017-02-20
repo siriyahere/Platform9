@@ -33,7 +33,7 @@ public 	class SynchronizedMapUtil<K,V> {
 	  @SuppressWarnings("rawtypes")
 	synchronized void add_to_read_list(Reader<K,V> reader,K key){
 		  try {
-			readLock.acquire();
+		//	readLock.acquire();
 		
 		  if(readersList.containsKey(key))
 			  readersList.get(key).add(reader);
@@ -44,23 +44,25 @@ public 	class SynchronizedMapUtil<K,V> {
 			  readersList.put(key, (ArrayList<Reader>) list);
 		  }
 		  
-		  } catch (InterruptedException e) {
+		  } catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		  finally{
-			  readLock.release();
+			//  readLock.release();
 		  }
 			  
 	  }
 	  
 	  public synchronized V get(K start,Reader<K,V> reader) throws InterruptedException {
 	  
-		  System.out.println(writeCount);
-		
+		 
 		//  latch.await();
-		  while(!writeCount.equals(0))
+		  while(((writeCount.get()!=0))){
+			  System.out.println("Reader execution waiting for write lock to be released to avoid reading of stale data");
 			  wait();
+		  }
+		  
 		  readLock.acquire();
           readCount.getAndIncrement();
           readLock.release();
@@ -70,6 +72,7 @@ public 	class SynchronizedMapUtil<K,V> {
           this.add_to_read_list(reader, start);
           readLock.release();
           readCount.getAndDecrement();
+          System.out.println("Reader completed");
           return ret;
 	    //return ;
 	  }
@@ -100,6 +103,8 @@ public 	class SynchronizedMapUtil<K,V> {
           
           writeCount.getAndDecrement();
           writeLock.release();
+          System.out.println("After write"+writeCount);
+          notifyAll();
           
 
 		}
@@ -108,8 +113,8 @@ public 	class SynchronizedMapUtil<K,V> {
 		 e.printStackTrace();
 		}
 		finally{
-			if(!writeCount.equals(0))
-				writeCount.getAndIncrement();
+			//if((writeCount.get()!=0))
+			//	writeCount.getAndDecrement();
 	          writeLock.release();
 	          notifyAll();
 		}

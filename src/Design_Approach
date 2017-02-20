@@ -1,0 +1,26 @@
+
+1. Read/Write Semaphore is used
+2. Read checks if there are any write locks for the map from which it is going to fetch the data. Here Map<K,V> 
+would be the cache.
+3. If there are any locks it would wait for the lok to be released.
+4. This is done using AtomicInteger and Increment decrement methods.
+5. EVery time a reader tries to read data from cache
+	1. It obtains an atomic lock to increment readersCount.
+	2. It then adds itself to the list of readers captured as part of knowing the readers who read this value from cache. 
+	This helps in notifying the readers of change whenever the key they have is modified.
+	3.Once it is complete then it updates the data and decrements the readers count and wakes up any writer .
+6. Every time a writer tries to update data in cache
+	1.It checks if there are any readers if yes it waits.
+	2.It obtains write lock and increments the writers count
+	3. AFter updating it invokes the notification for readers who had consumed the modified data at some early point
+	4. Decrements writer count
+	
+Bugs in the code
+
+If an interrupted exception happens not able to properly decrement the writecount.
+In some cases read does not wait for write.
+
+
+
+
+	 
